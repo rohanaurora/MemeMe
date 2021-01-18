@@ -41,13 +41,14 @@ class MemeEditorVC: UIViewController,
     private func setupViews() {
         navigationController?.navigationBar.topItem?.title = Constants.appTitle
         view.backgroundColor = .clear
-        topTextField.delegate = self
-        bottomTextField.delegate = self
         setupButtons()
         setupTextFields()
     }
     
     private func setupTextFields() {
+        topTextField.delegate = self
+        bottomTextField.delegate = self
+
         for tf in [topTextField, bottomTextField] {
             memeTextAttributes(tf!)
             showPlaceholderText(textField: tf!)
@@ -73,17 +74,6 @@ class MemeEditorVC: UIViewController,
         dismiss(animated: true)
     }
     
-    // Helper method
-    private func memeTextAttributes(_ textField: UITextField)  {
-        let customAttr: [NSAttributedString.Key: Any] = [
-            NSAttributedString.Key.strokeColor: UIColor.black,
-            NSAttributedString.Key.foregroundColor: UIColor.white,
-            NSAttributedString.Key.font: UIFont(name: "HelveticaNeue-CondensedBlack", size: 40)!,
-            NSAttributedString.Key.strokeWidth:  -3
-        ]
-        textField.defaultTextAttributes = customAttr
-    }
-    
     // MARK: - Keyboard
     func subscribeToKeyboardNotifications() {
         NotificationCenter.default.addObserver(self, selector:  #selector(self.keyboardWillShow), name: UIResponder.keyboardWillShowNotification, object: nil)
@@ -91,8 +81,7 @@ class MemeEditorVC: UIViewController,
     }
     
     func unsubscribeFromKeyboardNotifications() {
-        NotificationCenter.default.removeObserver(self, name: UIResponder.keyboardWillShowNotification, object: nil)
-        NotificationCenter.default.removeObserver(self, name: UIResponder.keyboardWillHideNotification, object: nil)
+        NotificationCenter.default.removeObserver(self)
     }
     
     @IBAction func keyboardWillShow(_ notification: Notification) {
@@ -168,7 +157,7 @@ class MemeEditorVC: UIViewController,
         return memedImage
     }
     
-    private func saveMeme(_ memedImage: UIImage) -> Meme {
+    @discardableResult private func saveMeme(_ memedImage: UIImage) -> Meme {
         let meme = Meme(topText: topTextField.text!, bottomText: bottomTextField.text!, originalImage: selectedImageView, memedImage: memedImage)
         return meme
     }
@@ -177,20 +166,12 @@ class MemeEditorVC: UIViewController,
 extension MemeEditorVC {
 
 // MARK: - Actions
-
     @IBAction func openPhotos(_ sender: UIBarButtonItem) {
-        let pickerController = UIImagePickerController()
-        pickerController.delegate = self
-        pickerController.allowsEditing = true
-        pickerController.sourceType = .photoLibrary
-        present(pickerController, animated: true, completion: nil)
+        presentImagePickerWith(sourceType: .photoLibrary)
     }
-    
+
     @IBAction func openCamera(_ sender: UIBarButtonItem) {
-        let imagePicker = UIImagePickerController()
-        imagePicker.delegate = self
-        imagePicker.sourceType = .camera
-        present(imagePicker, animated: true, completion: nil)
+        presentImagePickerWith(sourceType: .camera)
     }
     
     @IBAction func cancelButtonPressed() {
@@ -205,8 +186,30 @@ extension MemeEditorVC {
         present(avc, animated: true)
         avc.completionWithItemsHandler = { (activityType: UIActivity.ActivityType?, completed: Bool, arrayReturnedItems: [Any]?, error: Error?) in
             if completed {
-                _ = self.saveMeme(memedImage)
+                self.saveMeme(memedImage)
             }
         }
     }
+}
+
+// MARK: - Helper Methods
+
+extension MemeEditorVC {
+    private func presentImagePickerWith(sourceType: UIImagePickerController.SourceType) {
+        let ipc = UIImagePickerController()
+        ipc.delegate = self
+        ipc.sourceType = sourceType
+        present(ipc, animated: true, completion: nil)
+    }
+    
+    private func memeTextAttributes(_ textField: UITextField)  {
+        let customAttr: [NSAttributedString.Key: Any] = [
+            NSAttributedString.Key.strokeColor: UIColor.black,
+            NSAttributedString.Key.foregroundColor: UIColor.white,
+            NSAttributedString.Key.font: UIFont(name: "HelveticaNeue-CondensedBlack", size: 40)!,
+            NSAttributedString.Key.strokeWidth:  -3
+        ]
+        textField.defaultTextAttributes = customAttr
+    }
+
 }
